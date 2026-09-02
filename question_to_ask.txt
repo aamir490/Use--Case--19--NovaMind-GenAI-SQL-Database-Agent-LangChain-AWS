@@ -1,0 +1,42 @@
+NovaMind AI — Questions to Ask
+================================
+Use these in the Streamlit chat UI or POST to /query.
+Select the matching data source in the sidebar before asking.
+
+─────────────────────────────────────
+ LIBRARY DATA  (Data Source: Athena)
+─────────────────────────────────────
+
+1. How many books are in the library?
+
+2. How many distinct genres are there in the library?
+
+3. List all books written by H. G. Wells.
+
+4. Which genre has the most books?
+
+5. How many books were published after 1950?
+
+6. Who are the top 5 authors with the most books in the library?
+
+7. List all Science Fiction books ordered by publication date.
+
+8. How many books were published in each decade?
+
+─────────────────────────────────────
+ CARS DATA  (Data Source: Athena)
+─────────────────────────────────────
+
+9.  How many cars are in the dataset?
+
+10. What is the average price of a car?
+
+11. Which car make has the highest average horsepower?
+
+12. List all cars with more than 200 horsepower.
+
+13. What are the top 5 most fuel-efficient cars by mpg?
+
+14. How many cars are available for each body style?
+
+15. What is the average price of rear-wheel drive cars compared to front-wheel drive cars?
