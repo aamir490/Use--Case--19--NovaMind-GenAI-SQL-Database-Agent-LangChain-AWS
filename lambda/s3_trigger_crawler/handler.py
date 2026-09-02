@@ -28,7 +28,7 @@ glue = boto3.client("glue")
 # Environment variables set by CloudFormation
 CRAWLER_ROLE_ARN = os.environ["CRAWLER_ROLE_ARN"]
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID", "")
-REGION = os.environ.get("AWS_REGION", "eu-north-1")
+REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 
 def _sanitize_name(prefix: str) -> str:

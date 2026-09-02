@@ -11,7 +11,7 @@ set -euo pipefail
 # ── Configuration ─────────────────────────────────────────────────────────
 TEMPLATE_FILE="cloudformation-template-validated.yml"
 STACK_NAME="cgs-ai-analyst-agent-project"
-REGION="${AWS_REGION:-eu-north-1}"
+REGION="${AWS_REGION:-us-east-1}"
 IAM_USER="${IAM_USER:-$(aws iam get-user --query 'User.UserName' --output text 2>/dev/null || echo 'unknown')}"
 DESIRED_COUNT="${DESIRED_COUNT:-1}"
 AUTO_MODE=false

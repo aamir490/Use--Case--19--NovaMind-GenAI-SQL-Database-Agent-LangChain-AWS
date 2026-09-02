@@ -2,7 +2,7 @@
 # Build the API image, push to ECR, and optionally scale/start the ECS service.
 set -euo pipefail
 
-REGION="${AWS_REGION:-eu-north-1}"
+REGION="${AWS_REGION:-us-east-1}"
 STACK_NAME="${STACK_NAME:-cgs-ai-analyst-agent-project}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 DESIRED_COUNT="${DESIRED_COUNT:-1}"

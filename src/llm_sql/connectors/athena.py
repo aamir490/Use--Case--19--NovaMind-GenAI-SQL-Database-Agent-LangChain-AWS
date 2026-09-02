@@ -35,7 +35,7 @@ class AthenaConnector(BaseConnector):
             self._service = build_athena_service(
                 glue_db_names=glue_db_names,
                 project_files_bucket=self.settings['s3_bucket'],
-                region=self.settings.get('region', 'eu-north-1'),
+                region=self.settings.get('region', 'us-east-1'),
                 athena_workgroup=self.settings.get('workgroup', 'primary'),
             )
         return self._service

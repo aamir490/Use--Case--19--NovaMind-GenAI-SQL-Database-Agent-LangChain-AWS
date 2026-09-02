@@ -159,6 +159,6 @@ def get_connector_from_env() -> BaseConnector | None:
         'glue_db_names': os.environ.get('GLUE_DB_NAMES', ''),
         's3_bucket': bucket,
         'workgroup': os.environ.get('ATHENA_WORKGROUP', 'primary'),
-        'region': os.environ.get('AWS_REGION', 'eu-north-1'),
+        'region': os.environ.get('AWS_REGION', 'us-east-1'),
     }
     return AthenaConnector(name='Athena (env)', settings=settings)

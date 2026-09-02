@@ -665,9 +665,9 @@ Resources:
                 Action:
                   - bedrock:InvokeModel
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/eu.amazon.nova-micro-v1:0"
-                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/eu.amazon.nova-lite-v1:0"
-                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/eu.amazon.nova-pro-v1:0"
+                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0"
+                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0"
+                  - !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.amazon.nova-pro-v1:0"
                   - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-micro-v1:0"
                   - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-lite-v1:0"
                   - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-pro-v1:0"
@@ -849,7 +849,7 @@ Resources:
             - Name: ATHENA_WORKGROUP
               Value: !Ref AthenaWorkgroupName
             - Name: BEDROCK_MODEL
-              Value: eu.amazon.nova-micro-v1:0
+              Value: us.amazon.nova-micro-v1:0
             - Name: LOG_LEVEL
               Value: INFO
             - Name: PORT
@@ -1073,7 +1073,7 @@ Outputs:
       Name: !Sub "${AWS::StackName}-ServiceSecurityGroup"
 
   ProjectfilesBucketName:
-    Description: Primary S3 data bucket (eu-north-1)
+    Description: Primary S3 data bucket (us-east-1)
     Value: !Ref PrimaryDataBucketName
 
   LibraryDatabaseName:

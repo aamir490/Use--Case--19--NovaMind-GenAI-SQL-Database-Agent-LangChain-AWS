@@ -18,7 +18,7 @@ def _resolve_credentials(settings: dict[str, Any]) -> tuple[str, str]:
     if secret_name and (not user or not password):
         import boto3
         import json
-        region = settings.get('region', 'eu-north-1')
+        region = settings.get('region', 'us-east-1')
         client = boto3.client('secretsmanager', region_name=region)
         resp = client.get_secret_value(SecretId=secret_name)
         secret = json.loads(resp['SecretString'])

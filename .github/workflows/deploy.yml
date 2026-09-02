@@ -11,7 +11,7 @@ on:
         default: "1"
 
 env:
-  AWS_REGION: eu-north-1
+  AWS_REGION: us-east-1
   ECR_REPOSITORY: data-architecture-ai
   ECS_CLUSTER: data-architecture-ai
   ECS_SERVICE: data-architecture-ai

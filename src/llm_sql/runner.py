@@ -55,7 +55,7 @@ def make_athena_connection_string(
     with ManagedQueryResultsConfiguration).
     """
     runtime_settings = get_settings()
-    region = region or runtime_settings.region or 'eu-north-1'
+    region = region or runtime_settings.region or 'us-east-1'
     connathena = f'athena.{region}.amazonaws.com'
     port = '443'
 
@@ -126,7 +126,7 @@ def build_athena_service(
     if not glue_db_names:
         raise ValueError('At least one Glue database name must be provided.')
     runtime_settings = get_settings()
-    region = region or runtime_settings.region or 'eu-north-1'
+    region = region or runtime_settings.region or 'us-east-1'
     glue_db_name = glue_db_names[0]
     engine = create_athena_engine(
         glue_db_name=glue_db_name,

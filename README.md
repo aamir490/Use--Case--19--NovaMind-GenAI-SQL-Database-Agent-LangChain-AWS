@@ -1,153 +1,340 @@
-Project: Data Architecture with Generative AI
+# NovaMind AI Data Analyst Agent
 
-Overview
-- Notebook `mda_text_to_sql_langchain_bedrock.ipynb` demonstrates using LangChain + Bedrock to convert text to SQL and query data.
-- Datasets: `s3_library_data.json` (NDJSON), `s3_cars_data.csv` (CSV).
+> **Ask plain-English questions. Get instant SQL-powered answers from your data.**
 
-Quick setup
-1. Create a Python virtualenv and install dependencies:
+---
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+## About the Project
+
+NovaMind AI Data Analyst Agent is a production-grade, cloud-native **Text-to-SQL** service that converts natural language questions into SQL queries and executes them against live data sources — no SQL knowledge required.
+
+Built on **AWS Bedrock** (Amazon Nova models) and **LangChain**, the system understands a user's question, looks up the relevant database schema, generates correct SQL, enforces read-only safety guardrails, executes the query, and returns a human-readable answer — all in one seamless flow.
+
+The service is deployed on **AWS ECS Fargate** behind an Application Load Balancer, and exposes both a **FastAPI HTTP API** and an interactive **Streamlit chat UI**.
+
+---
+
+## Key Features
+
+- **Natural language to SQL** — powered by Amazon Nova Micro via AWS Bedrock and LangChain's text-to-SQL chain
+- **Multi-connector framework** — single codebase supports Athena, Redshift, RDS PostgreSQL, RDS MySQL/Aurora, Snowflake, and Databricks
+- **YAML-driven connections** — add or swap data sources by editing a single config file; no code changes required
+- **Read-only safety guardrails** — SQL allowlist validation, automatic `LIMIT` enforcement, and maximum question length guard prevent unsafe queries
+- **AWS Glue catalog integration** — schema is auto-discovered from Glue databases; Glue Crawlers are triggered automatically on S3 data changes via Lambda
+- **FastAPI HTTP API** — `/health` and `/query` endpoints; optional API key auth
+- **Streamlit chat UI** — interactive, browser-based chat interface with login, data source selector, and query history
+- **Infrastructure as Code** — full AWS environment (VPC, ECS, ALB, S3, Glue, Lambda, ECR, VPC Endpoints) defined in CloudFormation; no NAT Gateway (cost-optimised)
+- **CI/CD pipeline** — GitHub Actions gates every push: compile check → unit tests → smoke test → Docker build → ECS deploy
+
+---
+
+## Overall Solution
+
+![GenAI SQL LangChain Overall Solution](POC/img-genai-sql-langchain-overall-solution.png)
+
+---
+
+## Application Screenshots
+
+### Login
+
+![NovaMind Login Page 1](project-pic/Novamind-Ai-loginPage-1.png)
+![NovaMind Login Page 2](project-pic/Novamind-Ai-loginPage-2.png)
+
+### Dashboard
+
+![NovaMind AI Dashboard 1](project-pic/NovaMind-Ai-Dashboard1.png)
+![NovaMind AI Dashboard 2](project-pic/NovaMind-Ai-Dashboard2.png)
+
+---
+
+## How It Works
+
+```
+User question (natural language)
+        │
+        ▼
+  Streamlit UI  ──or──  HTTP API  (ALB → ECS Fargate)
+        │
+        ▼
+  LangChain Text-to-SQL Chain
+        │
+        ├─ 1. Schema lookup        ← AWS Glue Data Catalog
+        ├─ 2. SQL generation       ← Amazon Bedrock (Nova Micro)
+        ├─ 3. SQL validation       ← read-only allowlist + LIMIT guard
+        ├─ 4. SQL execution        ← Athena / Redshift / RDS / Snowflake / Databricks
+        └─ 5. Answer generation    ← Amazon Bedrock (natural language response)
+        │
+        ▼
+  Human-readable answer returned to user
 ```
 
-2. Configure AWS credentials (environment or AWS CLI).
-3. Run `setup.sh` to perform optional staging actions (uploads are commented out).
-4. Run production checks:
-   - `make check` (syntax/compile gate)
-   - `make test` (unit tests)
-   - `make smoke` (local data smoke test)
-   - `make prod-check` (all of the above)
+---
 
-Docker Desktop
-- **Not required** for: running the Streamlit UI (`make ui`), tests, scripts, querying the deployed API, or CloudFormation operations.
-- **Required only** for building and pushing container images (`./scripts/push_ecr.sh`, `make deploy-all`, `./deploy-changeset.sh --auto`).
-- Once the image is in ECR and ECS is running, Docker Desktop can be closed.
+## Architecture
 
-Files
-- `requirements.txt` — pinned project dependencies
-- `scripts/streamlit_app.py` — Streamlit chat UI (`make ui`)
-- `scripts/setup.sh` — helper script to install deps and optionally upload files
-- `scripts/normalize_cars.py` — ingestion and normalization for `s3_cars_data.csv`
-- `scripts/deploy-rds.sh` — deploy Aurora Serverless v2 (separate stack)
-- `scripts/load_rds_data.py` — load sample data (library + cars) into Aurora via Secrets Manager credentials
-- `schema/cars_schema.json`, `schema/library_schema.json` — JSON Schema draft-07 definitions
-- `cloudformation-template-validated.yml` — main IaC template (VPC, S3, Glue, ECS, Lambda)
-- `cloudformation-rds-aurora.yml` — Aurora Serverless v2 template (separate stack)
-- `config/connections/*.yaml.template` — data source connection templates (Athena, Redshift, RDS, Snowflake, Databricks)
-- `src/llm_sql/connectors/` — multi-connector framework
-- `.env.template` — environment variable template
-- `deploy-changeset.sh` — deployment script for main stack
-- `DEPLOYMENT.md` — detailed deployment guide with examples
+### AWS Infrastructure
 
-S3 Buckets
-The CloudFormation template creates an S3 data bucket with a globally unique name:
-- `langchain-<account-id>-eu-north-1` — primary bucket (eu-north-1)
+![AWS CloudFormation Stack](project-pic/aws-cloudformation-stack.png)
 
-The bucket has versioning, AES-256 encryption, public access blocked, and a 30-day
-lifecycle rule to expire Athena query results.
+The main CloudFormation stack (`cloudformation-template-validated.yml`) provisions:
 
-Deployment
-- See [DEPLOYMENT.md](DEPLOYMENT.md) for CloudFormation stack creation and change set workflow.
-- Main stack: `cloudformation-template-validated.yml` (VPC, ECS, Lambda, Glue, S3)
-- RDS stack: `cloudformation-rds-aurora.yml` (Aurora Serverless v2, separate lifecycle)
-- Deploy all: `./deploy-changeset.sh --auto` (main) + `./scripts/deploy-rds.sh --auto` (database)
+```
+VPC (private subnets, no NAT Gateway)
+  ├── ECS Fargate Cluster + Service + Task Definition
+  │     └── Container: FastAPI app (serve.py, port 8080)
+  ├── Application Load Balancer (public, HTTP port 80)
+  ├── ECR Repository (Docker image registry)
+  ├── S3 Bucket (data storage + Athena query results)
+  ├── AWS Glue
+  │     ├── Databases: project_library_db, project_cars_db
+  │     └── Crawlers: project-library-crawler, project-cars-crawler
+  ├── Amazon Athena Workgroup (project-text-to-sql)
+  ├── Lambda Function (S3 event → Glue Crawler trigger)
+  ├── VPC Endpoints (S3, Bedrock, Glue, ECR, CloudWatch — no NAT needed)
+  ├── IAM Roles (EcsTaskExecutionRole, EcsTaskRole, LibraryCrawlerRole)
+  └── CloudWatch Log Group
+```
 
-CloudFormation Stacks
+An optional second stack (`cloudformation-rds-aurora.yml`) adds Aurora Serverless v2 MySQL.
+
+### AWS Services
+
+| Service | Role |
+|---|---|
+| ![](project-pic/aws-ecs.png) **Amazon ECS Fargate** | Runs the containerised FastAPI application |
+| ![](project-pic/aws-glue.png) **AWS Glue** | Stores table schemas; crawlers auto-register new data |
+| ![](project-pic/aws-athena.png) **Amazon Athena** | Serverless SQL execution over S3 data |
+| ![](project-pic/aws-lambda.png) **AWS Lambda** | Auto-triggers Glue Crawlers on S3 upload events |
+| ![](project-pic/s3-bucket.png) **Amazon S3** | Data storage and Athena query result output |
+| **Amazon Bedrock** | LLM inference — Amazon Nova Micro (`us.amazon.nova-micro-v1:0`) |
+| **AWS Secrets Manager** | Stores database credentials for RDS/Redshift connectors |
+| **Amazon ECR** | Docker image registry (`data-architecture-ai`) |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Python 3.11 |
+| LLM Orchestration | LangChain, LangChain-Community |
+| LLM Provider | AWS Bedrock — Amazon Nova Micro |
+| HTTP API | FastAPI + Uvicorn |
+| Chat UI | Streamlit |
+| Data Connectors | PyAthena, SQLAlchemy, psycopg2, PyMySQL, snowflake-sqlalchemy, databricks-sql-connector |
+| Settings Validation | Pydantic v1 (BaseSettings) |
+| AWS SDK | boto3 |
+| Infrastructure | AWS CloudFormation |
+| Container | Docker (Python 3.11-slim, linux/amd64) |
+| CI/CD | GitHub Actions |
+| Testing | unittest, hypothesis, smoke test (no AWS calls) |
+
+---
+
+## Supported Data Sources
+
+| Connector | Config File |
+|---|---|
+| AWS Athena | `config/connections/athena.yaml` |
+| AWS Redshift | `config/connections/redshift.yaml` |
+| RDS PostgreSQL | `config/connections/rds-postgres.yaml` |
+| RDS MySQL / Aurora | `config/connections/rds-mysql.yaml` |
+| Snowflake | `config/connections/snowflake.yaml` |
+| Databricks | `config/connections/databricks.yaml` |
+
+Each connector is a YAML file in `config/connections/`. Set `enabled: true` to activate it. The connector registry auto-discovers all enabled connections at startup.
+
+---
+
+## Quick Setup
+
+```bash
+# 1. Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure AWS credentials
+aws configure
+
+# 4. Run local quality checks (no AWS calls required)
+make prod-check                    # compile check + unit tests + smoke test
+
+# 5. Start the Streamlit chat UI
+make ui                            # opens http://localhost:8501
+```
+
+**Windows PowerShell:**
+```powershell
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:PYTHONPATH = "src"
+.venv\Scripts\python.exe -m streamlit run scripts/streamlit_app_new.py
+```
+
+---
+
+## Make Targets
+
+```bash
+make check       # Compile-check all Python (syntax gate)
+make test        # Unit tests (unittest, no AWS calls)
+make smoke       # Smoke test — local data, no AWS calls
+make prod-check  # All three above in sequence (CI gate)
+make ui          # Start Streamlit chat UI
+make deploy      # CloudFormation change set (review mode)
+make deploy-all  # Full auto: deploy stack + build image + start ECS
+make setup       # Create venv and install dependencies
+```
+
+---
+
+## Deployment
+
+Docker Desktop is **not required** for running the Streamlit UI, tests, or querying the API. It is only required when building and pushing the Docker image to ECR.
+
+```bash
+# Full automated deployment (recommended)
+./deploy-changeset.sh --auto
+
+# Step-by-step
+./deploy-changeset.sh                  # Create change set and review
+aws cloudformation execute-change-set ...  # Execute after review
+DESIRED_COUNT=1 ./scripts/push_ecr.sh      # Build image + push to ECR + start ECS
+```
+
+**Windows PowerShell:**
+```powershell
+$env:DESIRED_COUNT = "1"
+bash ./scripts/push_ecr.sh
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the complete step-by-step deployment guide.
+
+---
+
+## CloudFormation Stacks
 
 | Stack | Template | Purpose |
-|-------|----------|---------|
-| `cgs-ai-analyst-agent-project` | `cloudformation-template-validated.yml` | VPC, ECS, ALB, Lambda, Glue, S3, VPC endpoints |
+|---|---|---|
+| `cgs-ai-analyst-agent-project` | `cloudformation-template-validated.yml` | VPC, ECS, ALB, Lambda, Glue, S3, VPC Endpoints |
 | `cgs-ai-rds-aurora` | `cloudformation-rds-aurora.yml` | Aurora Serverless v2 (MySQL), Secrets Manager credentials |
 
-CloudFormation Outputs (consumed by the notebook)
+### Key Outputs
+
 | Output Key | Description |
 |---|---|
-| `VpcId` | Stack-managed VPC |
-| `PrivateSubnetIds` | Private subnets (ECS tasks, RDS) |
-| `ServiceSecurityGroupId` | ECS security group (used by RDS for ingress) |
-| `ProjectfilesBucketName` | Primary S3 bucket |
-| `LibraryDatabaseName` | Glue database for library data |
-| `CarsDatabaseName` | Glue database for cars data |
-| `LibraryCrawlerName` | Glue crawler for library data |
-| `CarsCrawlerName` | Glue crawler for cars data |
-| `AthenaWorkgroupName` | Athena workgroup for queries |
 | `LoadBalancerUrl` | Public HTTP URL for the Text-to-SQL API |
 | `EcrRepositoryUri` | ECR URI for container images |
 | `EcsClusterName` | ECS cluster name |
 | `EcsServiceName` | ECS service name |
-| `CrawlerTriggerLambdaArn` | Lambda that auto-triggers Glue Crawlers |
+| `LibraryDatabaseName` | Glue database for library data |
+| `CarsDatabaseName` | Glue database for cars data |
+| `AthenaWorkgroupName` | Athena workgroup |
+| `ProjectfilesBucketName` | Primary S3 data bucket |
 
-Data & Testing
-- Run `python run_smoke.py` to smoke-test data loading and normalization locally (no AWS calls).
-- Normalized cars CSV: `s3_cars_data_normalized.csv` (produced by normalization).
-- Unit tests: `PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py" -v`
+---
 
-Production baseline
-- Safer query execution defaults:
-  - read-only and allowlist SQL validation
-  - automatic `LIMIT` enforcement when missing
-  - max question length guard
-- Config hardening via typed settings:
-  - `MAX_RESULT_ROWS`, `MAX_QUESTION_CHARS`, `LOG_LEVEL`
-- Operational CLI behavior:
-  - explicit non-zero exit codes on setup/catalog/query failures
-  - optional JSON output (`--json-output`) for automation
-- Container hardening:
-  - non-root runtime user
-  - Python runtime safety defaults
-  - reduced Docker build context via `.dockerignore`
-- CI quality gate:
-  - compile checks, unit tests, and smoke test on push/PR
+## API Endpoints
 
-Production-grade setup
-1. Set required runtime variables:
-   - `GLUE_DB_NAME`
-   - `PROJECT_FILES_BUCKET`
-   - Optional hardening controls:
-     - `MAX_RESULT_ROWS` (default `200`)
-     - `MAX_QUESTION_CHARS` (default `1000`)
-     - `LOG_LEVEL` (`DEBUG|INFO|WARNING|ERROR|CRITICAL`)
-     - `ATHENA_WORKGROUP` (default `primary`; use `project-text-to-sql` when deployed via CloudFormation)
-     - `API_KEY` (optional HTTP API auth)
-2. Run the full production gate locally before deployment:
-   - `make prod-check`
-3. Run the query CLI in automation-friendly mode when needed:
-   - `PYTHONPATH=src python scripts/run_query.py --question "..." --json-output`
-4. Build and run with Docker for consistent execution (ECS needs `linux/amd64`; use `scripts/push_ecr.sh` on Apple Silicon):
-   - `DESIRED_COUNT=1 ./scripts/push_ecr.sh`
-   - Local run: `docker build --platform linux/amd64 -t data-architecture-ai .`
-   - API: `GET /health`, `POST /query` with `{"question": "..."}`
-5. Deploy to ECS Fargate (recommended production path):
-   - `./deploy-changeset.sh --auto` (deploys stack + builds image + starts service)
-   - Or step by step: `./deploy-changeset.sh` → execute change set → `DESIRED_COUNT=1 ./scripts/push_ecr.sh`
-   - See [DEPLOYMENT.md](DEPLOYMENT.md) for full ECS workflow
-6. Deploy Aurora Serverless v2 (optional, for RDS MySQL connector):
-   - `./scripts/deploy-rds.sh --auto`
-   - Paste the printed connection config into `config/connections/rds-mysql.yaml`
-   - Load sample data: `PYTHONPATH=src python3 scripts/load_rds_data.py`
-7. Keep CI required on pull requests:
-   - Workflow: `.github/workflows/ci.yml`
-   - Gates: compile, unit tests, smoke test
-
-Notebook environment variable
-Set `CFN_STACK_NAME` before launching Jupyter to avoid editing the placeholder in cell 4:
-```bash
-export CFN_STACK_NAME=cgs-ai-analyst-agent-project
+```
+GET  /health    → {"status": "ok", ...}
+POST /query     → {"question": "How many books are in the library?"}
+                ← {"answer": "There are 142 books in the library.", "sql": "SELECT COUNT(*) ..."}
 ```
 
-Streamlit UI
-```bash
-export GLUE_DB_NAME=project_library_db
-export PROJECT_FILES_BUCKET=langchain-<account-id>-eu-north-1
-export ATHENA_WORKGROUP=project-text-to-sql
-export ATHENA_USE_MANAGED_RESULTS=true
-make ui
-```
-Opens http://localhost:8501 — or set `API_URL` to use the deployed ECS API. See [DEPLOYMENT.md](DEPLOYMENT.md).
+Optional header: `X-Api-Key: <your-key>` (set via `API_KEY` environment variable).
 
-Next steps
-- Review `mda_text_to_sql_langchain_bedrock.ipynb` and set `CFN_STACK_NAME`.
-- Run `deploy-changeset.sh` to create a change set and review before deploying to AWS.
+---
+
+## Project Structure
+
+```
+.
+├── src/llm_sql/              # Main application package
+│   ├── api.py                # FastAPI endpoints (/health, /query)
+│   ├── config.py             # Pydantic settings (env vars, validation)
+│   ├── core.py               # LLMSQLService — LangChain text-to-SQL logic
+│   ├── runner.py             # Service builder (wires connectors + LLM)
+│   ├── secrets.py            # Secrets Manager integration
+│   └── connectors/           # Multi-connector framework (Athena, Redshift, RDS, Snowflake, Databricks)
+├── scripts/
+│   ├── serve.py              # ECS Fargate entrypoint (uvicorn)
+│   ├── streamlit_app_new.py  # Streamlit chat UI (make ui)
+│   ├── run_query.py          # CLI query tool (--json-output for automation)
+│   └── push_ecr.sh           # Build + push Docker image to ECR
+├── config/connections/       # Data source YAML configs (one per source)
+├── tests/                    # Unit tests (unittest)
+├── data/                     # Sample data (CSV, JSON)
+├── schema/                   # JSON Schema definitions
+├── lambda/                   # Lambda handler (S3 → Glue Crawler trigger)
+├── cloudformation-template-validated.yml   # Main IaC template
+├── cloudformation-rds-aurora.yml           # Aurora Serverless v2 stack
+├── deploy-changeset.sh       # CloudFormation deployment script
+├── Dockerfile                # Container build (Python 3.11-slim, non-root)
+├── Makefile                  # Task runner
+└── DEPLOYMENT.md             # Full deployment guide
+```
+
+---
+
+## Safety & Security
+
+- **Read-only enforcement** — only `SELECT` statements are permitted; DDL/DML is blocked by allowlist validation
+- **Automatic LIMIT** — queries without a LIMIT clause have one added automatically (`MAX_RESULT_ROWS`, default 200)
+- **Question length guard** — oversized prompts are rejected (`MAX_QUESTION_CHARS`, default 1000)
+- **Non-root container** — the Docker image runs as a system user with no elevated privileges
+- **VPC Endpoints** — all AWS service traffic stays within the VPC; no internet egress required
+- **Secrets Manager** — database credentials are never stored in environment variables or config files for RDS/Redshift connectors
+
+---
+
+## Configuration
+
+Copy `.env.template` to `.env` for local development:
+
+```env
+APP_USERNAME=admin
+APP_PASSWORD=cloudage
+
+GLUE_DB_NAME=project_library_db
+PROJECT_FILES_BUCKET=langchain-<account-id>-us-east-1
+ATHENA_WORKGROUP=project-text-to-sql
+ATHENA_USE_MANAGED_RESULTS=false
+AWS_REGION=us-east-1
+```
+
+On ECS Fargate, environment variables are injected by the CloudFormation task definition — the `.env` file is not used in production.
+
+---
+
+## Data & Testing
+
+```bash
+# Normalize cars CSV (required before S3 upload)
+python scripts/normalize_cars.py
+
+# Smoke test — loads local data into SQLite, no AWS calls
+python run_smoke.py
+
+# Unit tests
+PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+---
+
+## Deployment Guide
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the full step-by-step guide covering:
+
+- Prerequisites and AWS account setup
+- Enabling Bedrock model access
+- CloudFormation deployment with change sets
+- ECR image build and push
+- ECS service verification
+- Glue crawler management
+- Aurora RDS (optional)
+- Troubleshooting common errors

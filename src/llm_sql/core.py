@@ -75,7 +75,7 @@ class LLMSQLService:
         self.db = db
         self.glue_catalog = glue_catalog
         self.allowed_tables = allowed_tables
-        self.bedrock_model = resolve_bedrock_model(bedrock_model, region or 'eu-north-1')
+        self.bedrock_model = resolve_bedrock_model(bedrock_model, region or 'us-east-1')
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
         self.region = region
@@ -97,7 +97,7 @@ class LLMSQLService:
                 if 'bedrock_model' in sec:
                     self.bedrock_model = resolve_bedrock_model(
                         sec['bedrock_model'],
-                        region or 'eu-north-1',
+                        region or 'us-east-1',
                     )
             except ClientError:
                 logger.exception('Failed to fetch secret %s', secrets_manager_secret)

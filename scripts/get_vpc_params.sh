@@ -4,7 +4,7 @@
 # This script is used by deploy-changeset.sh only to display post-deploy info.
 set -euo pipefail
 
-REGION="${AWS_REGION:-eu-north-1}"
+REGION="${AWS_REGION:-us-east-1}"
 STACK_NAME="${STACK_NAME:-cgs-ai-analyst-agent-project}"
 
 STACK_STATUS="$(aws cloudformation describe-stacks \

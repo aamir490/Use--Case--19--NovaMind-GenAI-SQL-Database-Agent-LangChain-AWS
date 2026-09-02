@@ -6,7 +6,7 @@ This guide shows how to deploy the `cloudformation-template-validated.yml` templ
 
 - AWS CLI installed and configured with credentials
 - IAM permissions to create CloudFormation stacks, IAM roles, EC2 (VPC/subnets/endpoints), S3, Glue, Athena, ECS, ECR resources
-- A deployed AWS region (default: `eu-north-1`)
+- A deployed AWS region (default: `us-east-1`)
 - **Docker Desktop** — required only for building/pushing container images (see below)
 
 ### Docker Desktop Requirements
@@ -61,14 +61,14 @@ make deploy-all  # Full auto — deploys everything
 ```
 
 **S3 Buckets created:**
-- `langchain-<account-id>-eu-north-1` — primary data bucket
-- `langchain-<account-id>-eu-central-1` — secondary data bucket
+- `langchain-637423369471-us-east-1` — primary data bucket
+- `langchain-<account-id>-us-central-1` — secondary data bucket
 
 ### Option 2: Manual AWS CLI commands
 
 #### 1. Set environment variables
 ```bash
-export AWS_REGION="eu-north-1"
+export AWS_REGION="us-east-1"
 export STACK_NAME="cgs-ai-analyst-agent-project"
 ```
 
@@ -226,11 +226,11 @@ Delete the failed stack, then redeploy:
 ```bash
 aws cloudformation delete-stack \
   --stack-name cgs-ai-analyst-agent-project \
-  --region eu-north-1
+  --region us-east-1
 
 aws cloudformation wait stack-delete-complete \
   --stack-name cgs-ai-analyst-agent-project \
-  --region eu-north-1
+  --region us-east-1
 
 ./deploy-changeset.sh
 ```
@@ -298,7 +298,7 @@ aws ecs update-service \
   --cluster data-architecture-ai \
   --service data-architecture-ai \
   --force-new-deployment \
-  --region eu-north-1
+  --region us-east-1
 ```
 
 Or attach the missing actions to role `cgs-ai-analyst-agent-project-EcsTaskRole-*` in IAM Console:
@@ -324,12 +324,12 @@ Browser interface for asking questions (local AWS or remote ECS API).
 
 ```bash
 export GLUE_DB_NAME=project_library_db
-export PROJECT_FILES_BUCKET=langchain-015337708931-eu-north-1
+export PROJECT_FILES_BUCKET=langchain-015337708931-us-east-1
 export ATHENA_WORKGROUP=project-text-to-sql
 export ATHENA_USE_MANAGED_RESULTS=true
 pip install -r requirements.txt
 make ui
-# or: PYTHONPATH=src streamlit run scripts/streamlit_app.py
+# or: PYTHONPATH=src streamlit run scripts/streamlit_app_new.py
 ```
 
 Opens at **http://localhost:8501**
@@ -339,7 +339,7 @@ Opens at **http://localhost:8501**
 ```bash
 export API_URL=http://<your-alb-dns>
 export API_KEY=your-key   # only if you set ApiKey in CloudFormation
-streamlit run scripts/streamlit_app.py
+streamlit run scripts/streamlit_app_new.py
 ```
 
 ## ECS Fargate API (production serving layer)
@@ -391,7 +391,7 @@ DESIRED_COUNT=1 ./scripts/push_ecr.sh
 ```bash
 aws cloudformation describe-stacks \
   --stack-name cgs-ai-analyst-agent-project \
-  --region eu-north-1 \
+  --region us-east-1 \
   --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerUrl'].OutputValue" \
   --output text
 ```
@@ -442,7 +442,7 @@ curl -X POST "${ALB_URL}/query" \
 
 ```bash
 export GLUE_DB_NAME=project_library_db
-export PROJECT_FILES_BUCKET=langchain-<account-id>-eu-north-1
+export PROJECT_FILES_BUCKET=langchain-637423369471-us-east-1
 export ATHENA_WORKGROUP=project-text-to-sql
 export ATHENA_USE_MANAGED_RESULTS=true
 PYTHONPATH=src python scripts/serve.py
@@ -456,7 +456,7 @@ The default Docker entrypoint runs the HTTP API. For one-off CLI queries:
 ```bash
 docker run --rm \
   -e GLUE_DB_NAME=project_library_db \
-  -e PROJECT_FILES_BUCKET=langchain-<account-id>-eu-north-1 \
+  -e PROJECT_FILES_BUCKET=langchain-637423369471-us-east-1 \
   --entrypoint python \
   data-architecture-ai /app/scripts/run_query.py --question "How many books?"
 ```
@@ -588,7 +588,7 @@ settings:
   port: 3306
   database: analyst_db
   user_from_secret: cgs-ai-rds-aurora/aurora-credentials
-  region: eu-north-1
+  region: us-east-1
 ```
 
 ### Load sample data
@@ -607,7 +607,7 @@ Override defaults with environment variables if needed:
 |----------|---------|-------------|
 | `RDS_SECRET` | `cgs-ai-rds-aurora/aurora-credentials` | Secrets Manager secret name |
 | `RDS_DATABASE` | `analyst_db` | Target database |
-| `AWS_REGION` | `eu-north-1` | Region for Secrets Manager calls |
+| `AWS_REGION` | `us-east-1` | Region for Secrets Manager calls |
 
 ### Architecture
 
@@ -625,7 +625,7 @@ Override defaults with environment variables if needed:
 ```bash
 aws cloudformation delete-stack \
   --stack-name cgs-ai-rds-aurora \
-  --region eu-north-1
+  --region us-east-1
 ```
 
 A final snapshot is created automatically before deletion.

@@ -2,10 +2,10 @@
 # Detect existing AWS resources and emit shell exports for CloudFormation parameters.
 set -euo pipefail
 
-REGION="${AWS_REGION:-eu-north-1}"
+REGION="${AWS_REGION:-us-east-1}"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 
-PRIMARY_BUCKET="langchain-${ACCOUNT_ID}-eu-north-1"
+PRIMARY_BUCKET="langchain-${ACCOUNT_ID}-us-east-1"
 ATHENA_WORKGROUP="project-text-to-sql"
 LIBRARY_DB="project_library_db"
 CARS_DB="project_cars_db"

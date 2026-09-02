@@ -431,7 +431,7 @@ def _ask_local(question: str) -> str:
     # Pass current config as cache keys so service rebuilds on config change
     db = os.environ.get('GLUE_DB_NAME', '')
     bucket = os.environ.get('PROJECT_FILES_BUCKET', '')
-    region = os.environ.get('AWS_REGION', 'eu-north-1')
+    region = os.environ.get('AWS_REGION', 'us-east-1')
     workgroup = os.environ.get('ATHENA_WORKGROUP', 'primary')
     service = _get_local_service(db, bucket, region, workgroup)
     return service.run_query(question)
@@ -669,7 +669,7 @@ def _render_sidebar():
             new_bucket = st.text_input(
                 '🪣 S3 Bucket',
                 value=os.environ.get('PROJECT_FILES_BUCKET', st.session_state.get('cfg_bucket', '')),
-                placeholder='e.g. langchain-012345-eu-north-1',
+                placeholder='e.g. langchain-637423369471-us-east-1',
                 key='cfg_bucket_input',
             )
             new_workgroup = st.text_input(
@@ -680,8 +680,8 @@ def _render_sidebar():
             )
             new_region = st.text_input(
                 '🌍 AWS Region',
-                value=os.environ.get('AWS_REGION', st.session_state.get('cfg_region', 'eu-north-1')),
-                placeholder='e.g. eu-north-1',
+                value=os.environ.get('AWS_REGION', st.session_state.get('cfg_region', 'us-east-1')),
+                placeholder='e.g. us-east-1',
                 key='cfg_region_input',
             )
 

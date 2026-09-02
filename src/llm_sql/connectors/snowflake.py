@@ -44,7 +44,7 @@ class SnowflakeConnector(BaseConnector):
         if secret_name:
             import boto3
             import json
-            region = self.settings.get('region', 'eu-north-1')
+            region = self.settings.get('region', 'us-east-1')
             client = boto3.client('secretsmanager', region_name=region)
             resp = client.get_secret_value(SecretId=secret_name)
             secret = json.loads(resp['SecretString'])

@@ -9,3 +9,4 @@ settings:
   catalog: main
   schema: default
   token_from_secret: databricks/token  # AWS Secrets Manager secret name
+  region: us-east-1                    # AWS region for Secrets Manager lookup (defaults to us-east-1)

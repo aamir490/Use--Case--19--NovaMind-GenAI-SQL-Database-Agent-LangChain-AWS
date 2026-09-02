@@ -45,7 +45,7 @@ prod-check: check test smoke
 
 # Start the Streamlit chat UI (installs deps into .venv first)
 ui: venv
-	PYTHONPATH=src $(VENV_PYTHON) -m streamlit run scripts/streamlit_app.py
+	PYTHONPATH=src $(VENV_PYTHON) -m streamlit run scripts/streamlit_app_new.py
 
 # Review mode — creates CloudFormation change set and shows summary
 deploy:

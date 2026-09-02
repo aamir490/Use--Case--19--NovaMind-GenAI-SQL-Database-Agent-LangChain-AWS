@@ -19,7 +19,7 @@
 │       └── databricks.py     # Databricks connector
 ├── scripts/                  # CLI tools and entrypoints
 │   ├── serve.py              # ECS Fargate entrypoint (uvicorn)
-│   ├── streamlit_app.py      # Streamlit chat UI
+│   ├── streamlit_app_new.py  # Streamlit chat UI
 │   ├── run_query.py          # CLI query tool (supports --json-output)
 │   ├── setup.sh              # Dependency installation helper
 │   ├── push_ecr.sh           # Build + push Docker image to ECR

@@ -1,0 +1,68 @@
+AWS settings applied throughout the project:
+
+AWS Account ID: "637423369471"
+AWS Region:     "us-east-1"
+AWS/deployment user: "mlops-user"
+S3 bucket:      "langchain-637423369471-us-east-1"
+Bedrock model:  "us.amazon.nova-micro-v1:0"
+
+Files updated:
+- .env.template
+- config/connections/athena.yaml
+- config/connections/athena.yaml.template
+- config/connections/redshift.yaml
+- src/llm_sql/config.py
+- src/llm_sql/core.py
+- src/llm_sql/runner.py
+- src/llm_sql/connectors/athena.py
+- src/llm_sql/connectors/registry.py
+- scripts/detect_existing_resources.sh
+- scripts/push_ecr.sh
+- scripts/configure_s3_notification.sh
+- scripts/deploy-rds.sh
+- scripts/streamlit_app.py
+- deploy-changeset.sh
+- .github/workflows/deploy.yml
+- cloudformation-template-validated.yml
+- lambda/s3_trigger_crawler/handler.py
+- DEPLOYMENT.md
+
+
+
+
+Read very carefully **all files and folders deeply because this is my mentor project now i want to deploy**, especially:
+
+* `DEPLOYMENT.md`
+* `README.md`
+
+# FOR ACRHITECUTE :- 
+* `ETLtoLLM.png`
+* `img-genai-sql-langchain-overall-solution.png`
+
+* anda ll Files and folder 
+
+Then create a **`steps_to_do.md`** file containing a complete, mentor-style AWS deployment guide.
+
+Include:
+
+1. **Prerequisites** like is s3 bucket create by any code , or i need to create s3 bucket , what about role ?  , IAM role create by code or need to create ?
+2. **Basic architecture**
+3. **what tools and servce require and what aws serive role require**
+3. **Pre-deployment tasks**
+4. **Step-by-step AWS deployment instructions**
+5. **AWS Account:** `637423369471`
+6. **AWS Region:** `us-east-1`
+7. **Post-deployment tasks and verification**
+8. **Testing and validation**
+9. **Cleanup/rollback steps**
+10. **Common errors and troubleshooting**
+
+Base the guide **strictly on the existing project files and architecture**. Do not guess or invent resources/configuration. Do not modify existing project files except creating `steps_to_do.md`.
+
+
+project-pic/aws-cloudformation-stack.png
+
+note.txt project-pic/NovaMind-Ai-Dashboard1.png project-pic/NovaMind-Ai-Dashboard2.png project-pic/Novamind-Ai-loginPage-1.png project-pic/Novamind-Ai-loginPage-2.png
+
+
+E:\GenAi-Project-Cloudage\Ai_Agent\Ai_Agent\project-pic

@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     # Runtime-required settings (validated via require_runtime_settings).
     glue_db_name: str | None = Field(None, env='GLUE_DB_NAME')
     project_files_bucket: str | None = Field(None, env='PROJECT_FILES_BUCKET')
-    region: str = Field('eu-north-1', env='AWS_REGION')
+    region: str = Field('us-east-1', env='AWS_REGION')
 
-    # Bedrock / LLM configuration (use inference profile IDs in EU/US, e.g. eu.amazon.nova-micro-v1:0)
-    bedrock_model: str = Field('eu.amazon.nova-micro-v1:0', env='BEDROCK_MODEL')
+    # Bedrock / LLM configuration (use inference profile IDs in EU/US, e.g. us.amazon.nova-micro-v1:0)
+    bedrock_model: str = Field('us.amazon.nova-micro-v1:0', env='BEDROCK_MODEL')
     bedrock_max_retries: int = Field(4, env='BEDROCK_MAX_RETRIES', ge=1)
     bedrock_retry_base_delay: float = Field(1.0, env='BEDROCK_RETRY_BASE_DELAY', gt=0)
 
