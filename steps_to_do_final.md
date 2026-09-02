@@ -87,6 +87,9 @@ docker version
 
 # Check Docker Buildx
 docker buildx version
+
+# Quick check
+docker ps
 ```
 
 Docker Desktop must be running.
@@ -307,7 +310,137 @@ ROLLBACK_IN_PROGRESS
 ROLLBACK_COMPLETE
 ```
 
+```powershell
+# watch CloudFormation events almost in real time from PowerShell
+while ($true) {
+    Clear-Host
+    Write-Host "=== CloudFormation Deployment Status ===" -ForegroundColor Cyan
+    Write-Host "Time: $(Get-Date)"
+    Write-Host ""
+
+    aws cloudformation describe-stack-events `
+      --stack-name cgs-ai-analyst-agent-project `
+      --region us-east-1 `
+      --query "StackEvents[0:15].[Timestamp,ResourceStatus,ResourceType,LogicalResourceId,ResourceStatusReason]" `
+      --output table
+
+    Start-Sleep -Seconds 5
+}
+```
+
 Stop and inspect the CloudFormation events before continuing.
+
+
+> Yesterday we were mainly waiting for CloudFormation. 
+> Today we can see that CloudFormation is actually spending time creating the **ECS/ALB/VPC-endpoint** resources.
+
+> In particular, **EcsService** is significant because an **ECS service can remain CREATE_IN_PROGRESS** while ECS is trying to get the task(s) running and healthy.
+
+> So don't assume it's simply "stuck" yet.
+> The next thing I'd check is **ECS service/task events**, because that can tell us whether the ECS task is failing to start, failing health checks, unable to pull the ECR image, having networking problems, etc.
+
+```powershell
+# Check CloudFormation events specifically for the ECS service
+# This helps identify why the ECS service is still in CREATE_IN_PROGRESS or has failed
+aws cloudformation describe-stack-events `
+  --stack-name cgs-ai-analyst-agent-project `
+  --region us-east-1 `
+  --query "StackEvents[?LogicalResourceId=='EcsService'].[Timestamp,ResourceStatus,ResourceStatusReason]" `
+  --output table `
+  --no-cli-pager
+
+
+# Check which CloudFormation resources are still being created
+# This shows only resources currently in CREATE_IN_PROGRESS status
+aws cloudformation describe-stack-resources `
+  --stack-name cgs-ai-analyst-agent-project `
+  --region us-east-1 `
+  --query "StackResources[?ResourceStatus=='CREATE_IN_PROGRESS'].[LogicalResourceId,ResourceType,ResourceStatus]" `
+  --output table `
+  --no-cli-pager
+
+
+# Get detailed information about the ECS service CloudFormation resource
+# This shows the physical resource ID, resource type, current status, and status reason
+aws cloudformation describe-stack-resources `
+  --stack-name cgs-ai-analyst-agent-project `
+  --region us-east-1 `
+  --logical-resource-id EcsService `
+  --output table `
+  --no-cli-pager
+
+# Check the current ECS service status and task counts
+# Shows the service name, service status, running tasks, desired tasks, and pending tasks
+aws ecs describe-services `
+  --cluster data-architecture-ai `
+  --services data-architecture-ai `
+  --region us-east-1 `
+  --query "services[0].[serviceName,status,runningCount,desiredCount,pendingCount]" `
+  --output table `
+  --no-cli-pager
+
+# Check the latest ECS service events
+# Helps identify task placement, container startup, image-pull, health-check, or other ECS service issues
+aws ecs describe-services `
+  --cluster data-architecture-ai `
+  --services data-architecture-ai `
+  --region us-east-1 `
+  --query "services[0].events[0:15].[createdAt,message]" `
+  --output table `
+  --no-cli-pager    
+
+# List all currently running ECS tasks for the data-architecture-ai service
+# This confirms whether the ECS service has successfully started any running tasks
+aws ecs list-tasks `
+  --cluster data-architecture-ai `
+  --service-name data-architecture-ai `
+  --region us-east-1 `
+  --desired-status RUNNING `
+  --output table `
+  --no-cli-pager
+
+
+# Check the latest ECS service events
+# Helps identify why tasks are starting, stopping, or failing to launch
+aws ecs describe-services `
+  --cluster data-architecture-ai `
+  --services data-architecture-ai `
+  --region us-east-1 `
+  --query "services[0].events[0:20].[createdAt,message]" `
+  --output table `
+  --no-cli-pager
+
+
+# List stopped ECS tasks for the data-architecture-ai service
+# This helps identify tasks that started but stopped due to container, image, or configuration issues
+aws ecs list-tasks `
+  --cluster data-architecture-ai `
+  --service-name data-architecture-ai `
+  --desired-status STOPPED `
+  --region us-east-1 `
+  --query "taskArns" `
+  --output table `
+  --no-cli-pager
+
+
+# Check whether the ECR repository exists and retrieve its repository URI
+# This confirms the repository used by the ECS service is available in us-east-1
+aws ecr describe-repositories `
+  --repository-names data-architecture-ai `
+  --region us-east-1 `
+  --query "repositories[0].[repositoryName,repositoryUri]" `
+  --output table `
+  --no-cli-pager
+
+# List all Docker images and tags currently available in the ECR repository
+# This verifies whether the image tag required by the ECS service, such as latest, exists
+aws ecr list-images `
+  --repository-name data-architecture-ai `
+  --region us-east-1 `
+  --output table `
+  --no-cli-pager  
+```
+
 
 ### Checkpoint
 
@@ -369,6 +502,12 @@ aws ecs describe-services `
   --region us-east-1 `
   --query "services[0].{Running:runningCount,Desired:desiredCount,Status:status}" `
   --output table
+
+# +---------+-----------+----------+
+# | Desired |  Running  | Status   |
+# +---------+-----------+----------+
+# |  1      |  1        |  ACTIVE  |
+# +---------+-----------+----------+
 ```
 
 Look for a running task.
@@ -441,6 +580,8 @@ $ALB_URL = aws cloudformation describe-stacks `
   --output text
 
 $ALB_URL
+
+# output :- http://data-arch-ai-alb-59542162.us-east-1.elb.amazonaws.com
 ```
 
 Save this URL.
@@ -528,6 +669,9 @@ $env:PYTHONPATH="src"
 
 # Start Streamlit
 .venv\Scripts\python.exe -m streamlit run scripts/streamlit_app_new.py
+
+Get-Content .env | Select-String "APP_USERNAME|APP_PASSWORD"
+
 ```
 
 Then open:

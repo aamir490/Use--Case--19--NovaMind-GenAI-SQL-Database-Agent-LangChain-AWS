@@ -608,11 +608,18 @@ Use this if you want to review each step individually.
 > Glue crawlers validate S3 paths at creation time. Empty or missing prefixes cause the stack to roll back.
 
 ```powershell
-# Create the bucket (skip if already exists)
+# Create the S3 bucket in the us-east-1 region (skip if it already exists)
 aws s3api create-bucket --bucket langchain-637423369471-us-east-1 --region us-east-1
 
-# Confirm it exists
-aws s3 ls | Select-String "langchain-637423369471"
+# Verify that the exact S3 bucket exists in the AWS account
+aws s3 ls | Select-String "langchain-637423369471-us-east-1"
+
+
+# List the contents of the S3 bucket
+aws s3 ls s3://langchain-637423369471-us-east-1/
+
+# List all objects inside the S3 bucket recursively
+aws s3 ls s3://langchain-637423369471-us-east-1/ --recursive
 ```
 
 If the bucket already exists you will get `BucketAlreadyOwnedByYou` — that is fine, proceed.

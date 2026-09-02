@@ -29,6 +29,9 @@ The service is deployed on **AWS ECS Fargate** behind an Application Load Balanc
 ---
 
 ## Overall Solution
+![Architecture](POC/architecture_new.png)
+
+-
 
 ![GenAI SQL LangChain Overall Solution](POC/img-genai-sql-langchain-overall-solution.png)
 
